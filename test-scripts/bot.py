@@ -11,14 +11,14 @@ parser = argparse.ArgumentParser(description = \
 PyBot v0.2\n\
 \n\
 Work-in-progress botnet.\n\
-Currently only generates obfuscated method of serving RSA keys and sending an encrypted payload. Does not execute payload. \n\
+Currently only generates obfuscated method of fetching RSA keys and sending an encrypted message. Does not yet execute payloads on client. \n\
 \n\
 _0853RV3R",
 formatter_class=argparse.RawTextHelpFormatter)
 
 parser.add_argument('-s', '--server', action="store_true", dest="server", help="server mde")
 parser.add_argument('-c', '--client', action="store_true", dest="client", help="client mode")
-parser.add_argument('-p', '--payload', action="store", dest="payload", help="payload/message to send")
+parser.add_argument('-m', '--message', action="store", dest="message", help="message to send")
 
 if len(sys.argv[1:])==0:
 	parser.print_help()		
@@ -26,9 +26,9 @@ if len(sys.argv[1:])==0:
 
 argument = parser.parse_args()
 
-payload = "hello world"
-if argument.payload:
-	payload = argument.payload
+message = "hello world"
+if argument.message:
+	message = argument.message
 
 
 host = '0.0.0.0'
@@ -173,10 +173,10 @@ def client():
 	bio = BIO.MemoryBuffer(public_key)
 	rsa = RSA.load_pub_key_bio(bio)
 
-	encrypted = rsa.public_encrypt(payload, RSA.pkcs1_oaep_padding)
+	encrypted = rsa.public_encrypt(message, RSA.pkcs1_oaep_padding)
 	packet = encrypted.encode('base64')
 
-	print('encrypting payload "' + payload + '"')
+	print('encrypting message "' + message + '"')
 
 	try:
 		s.connect((host, commport))
