@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # _0853RV3R
-import subprocess, logging, socket, sys, time, os, shelve, traceback, errno, pyotp
+import subprocess, logging, socket, sys, time, os, shelve, traceback, errno, pyotp, argparse
 from thread import *
 import urllib2
 from M2Crypto import BIO, RSA, Rand
@@ -13,13 +13,17 @@ formatter_class=argparse.RawTextHelpFormatter)
 
 parser.add_argument('-s', '--server', action="store_true", dest="server", help="server mde")
 parser.add_argument('-c', '--client', action="store_true", dest="client", help="client mode")
+parser.add_argument('-m', '--message', action="store", dest="message", help="message to send")
 
 if len(sys.argv[1:])==0:
-    parser.print_help()        
-    parser.exit()
+	parser.print_help()		
+	parser.exit()
 
 argument = parser.parse_args()
 
+message = "hello world"
+if argument.message:
+	message = argument.message
 
 
 host = '0.0.0.0'
@@ -40,7 +44,7 @@ class CommunicationServer():
 		if data:
 			packet = data.decode('base64')
 			decrypted = decrypt(packet, private_key)
-			print('[' + thetime + '] ' + addr[0] + ' >> ' + decrypted)
+			print('[' + thetime + '] ' + addr[0] + ' >> ' + str(decrypted))
 			c.close()
 
 	def start(self, host, commport, private_key):
@@ -97,6 +101,7 @@ def generate_RSA(bits=4096):
 def decrypt(packet, private_key):
 		rsa = RSA.load_key_string(private_key)
 		decrypted = rsa.private_decrypt(packet, RSA.pkcs1_oaep_padding)
+		return decrypted
 
 def notetime():
 	return time.strftime("%I:%M:%S %p")
@@ -140,8 +145,8 @@ def server():
 		print('SERVER HAS STOPPED')
 
 def client():
-    print('CLIENT')
-    private_key, public_key = generate_RSA()
+	print('CLIENT')
+	private_key, public_key = generate_RSA()
 
 	httpotp = str(httptotp.now().replace('0', '1'))
 	commotp = str(commtotp.now().replace('0', '1'))
@@ -150,12 +155,15 @@ def client():
 	httpport = int(httpotp[1:-1])
 	filename = httpotp[0] + httpotp[-1]
 
-	message = 'this is a test'
-
 	url = 'http://' + host + ':' + str(httpport) + '/' + filename
+	print(url)
 
-	loadkey = urllib.urlopen(url)
-	public_key = loadkey.read()
+	try:
+		loadkey = urllib2.urlopen(url)
+
+	except urllib2.HTTPError as e:
+		if e.code == 418:
+		    public_key = e.read()
 
 	bio = BIO.MemoryBuffer(public_key)
 	rsa = RSA.load_pub_key_bio(bio)
@@ -163,14 +171,21 @@ def client():
 	encrypted = rsa.public_encrypt(message, RSA.pkcs1_oaep_padding)
 	packet = encrypted.encode('base64')
 
+	print('encrypting message "' + message + '"')
+
 	try:
 		s.connect((host, commport))
 		s.send(packet)
+		print('packet sent')
 
 	finally:
 		s.close
 
-if __name__ == "__main__":
+
+if argument.server:
 	server()
+
+if argument.client:
+	client()
 
 #test()
