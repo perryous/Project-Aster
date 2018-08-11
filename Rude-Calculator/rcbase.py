@@ -18,7 +18,7 @@ if choice == 1:
 elif choice == 2:
    sub1 = input("Enter your first number: ")
    sub2 = input("Enter your second number: ")
-   loss = sub1+sub2
+   loss = sub1-sub2
    print(loss)
 
 elif choice == 3:
@@ -35,4 +35,3 @@ elif choice == 4:
    
 else:
    print("Invalid input")
-   
